@@ -73,6 +73,15 @@
             <% } %>
         </div>
 
+        <div id="treatment-search-container">
+            <label for="symptoms-search">${ ui.message("coreapps.consult.addHypertensionTreatment") }</label>
+            <input id="symptoms-search" type="text" placeholder="${ ui.message("coreapps.consult.addHypertensionTreatment.placeholder") }" autocomplete itemFormatter="autocomplete-render-item" preferredCodingSource="${ config.preferredCodingSource }" ${ config.diagnosisSets != null ? "diagnosisSets=\"" + config.diagnosisSets + "\"" : ""} ${ config.diagnosisConceptSources != null ? "diagnosisConceptSources=\"" + config.diagnosisConceptSources + "\"" : ""} ${ config.diagnosisConceptClasses != null ? "diagnosisConceptClasses=\"" + config.diagnosisConceptClasses + "\"" : ""}/>
+
+            <% if(jsForPrior.size > 0) { %>
+            <button type="button" ng-click="addPriorDiagnoses()">${ ui.message("coreapps.consult.priorDiagnoses.add") }</button>
+            <% } %>
+        </div>
+
         <div id="display-encounter-diagnoses-container">
             <h3>${ui.message("coreapps.consult.primaryDiagnosis")}</h3>
 
@@ -93,6 +102,18 @@
             </div>
             <ul>
                 <li data-ng-repeat="d in encounterDiagnoses.secondaryDiagnoses()">
+                    <span data-ng-include="'selected-diagnosis'"></span>
+                </li>
+            </ul>
+            <br/>
+
+            <h3>${ui.message("coreapps.consult.treatments")}</h3>
+
+            <div data-ng-show="encounterDiagnoses.secondaryDiagnoses().length == 0">
+                ${ui.message("coreapps.consult.treatments.noTreatment")}
+            </div>
+            <ul>
+                <li data-ng-repeat="d in treatments">
                     <span data-ng-include="'selected-diagnosis'"></span>
                 </li>
             </ul>
