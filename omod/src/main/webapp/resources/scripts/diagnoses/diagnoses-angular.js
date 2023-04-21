@@ -30,6 +30,11 @@ var app = angular.module('diagnoses', [])
                 select: function( event, ui ) {
                     scope.$apply(function() {
                         scope.encounterDiagnoses.addDiagnosis(diagnoses.Diagnosis(ui.item));
+                        if(ui.item.concept.preferredName =="Essential hypertension"){
+                         angular.forEach(ui.item.concept.conceptSets, function(value, key) {
+                               scope.treatments.addTreatments(diagnoses.Diagnosis(value));
+                              });
+                        }
                         element.val('');
                     });
                     return false;
@@ -47,6 +52,7 @@ var app = angular.module('diagnoses', [])
 
             $scope.encounterDiagnoses = diagnoses.EncounterDiagnoses();
             $scope.priorDiagnoses = diagnoses.EncounterDiagnoses();
+            $scope.treatments = [];
 
             $scope.addPriorDiagnoses = function() {
                 $scope.encounterDiagnoses.addDiagnoses(angular.copy($scope.priorDiagnoses.getDiagnoses()));

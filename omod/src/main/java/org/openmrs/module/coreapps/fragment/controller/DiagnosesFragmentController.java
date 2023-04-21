@@ -26,6 +26,7 @@ import org.openmrs.ConceptSource;
 import org.openmrs.Obs;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.ObsService;
+import org.openmrs.api.context.Context;
 import org.openmrs.module.appui.UiSessionContext;
 import org.openmrs.module.emrapi.EmrApiProperties;
 import org.openmrs.module.emrapi.concept.EmrConceptService;
@@ -55,9 +56,9 @@ public class DiagnosesFragmentController {
 
     /**
      * Searches for diagnoses with names matching query in the specified 1) diagnosisSets, 2) diagnosisConceptSources and/or diagnosisConceptClasses
-     * If diagnosisSets or diagnosisConceptSources attributes are missing, default values specided by emrApiProperties are used. 
+     * If diagnosisSets or diagnosisConceptSources attributes are missing, default values specided by emrApiProperties are used.
      * If '0' is specified for any of diagnosisSets or diagnosisConceptSources attributes, null is used for their corresponding values in the search.
-     * 
+     *
      * @param context
      * @param ui
      * @param emrApiProperties
@@ -86,51 +87,48 @@ public class DiagnosesFragmentController {
 
         List<ConceptClass> conceptClasses = new ArrayList<ConceptClass>();
         if (StringUtils.isNotEmpty(diagnosisConceptClasses)) {
-            String [] conceptClassNames = diagnosisConceptClasses.split(",");
+            String[] conceptClassNames = diagnosisConceptClasses.split(",");
             for (String className : conceptClassNames) {
                 ConceptClass conceptClass = conceptService.getConceptClassByName(className);
                 if (conceptClass != null) {
                     conceptClasses.add(conceptClass);
-                }                
+                }
             }
-        }
-        else {
-            conceptClasses = null;            
+        } else {
+            conceptClasses = null;
         }
 
         Collection<Concept> diagnosisSets = new ArrayList<Concept>();
         if (StringUtils.isNotEmpty(diagnosisSetUuids)) {
-            if (USE_NULL_VALUE.equals(diagnosisSetUuids) ) {
+            if (USE_NULL_VALUE.equals(diagnosisSetUuids)) {
                 diagnosisSets = null;
             } else {
-                String [] setUuids = diagnosisSetUuids.split(",");
+                String[] setUuids = diagnosisSetUuids.split(",");
                 for (String setUuid : setUuids) {
                     Concept conceptSet = conceptService.getConceptByUuid(setUuid);
                     if (conceptSet != null) {
                         diagnosisSets.add(conceptSet);
-                    }                
+                    }
                 }
             }
-        }
-        else {
+        } else {
             diagnosisSets = emrApiProperties.getDiagnosisSets();
         }
-                       
+
         List<ConceptSource> sources = new ArrayList<ConceptSource>();
         if (StringUtils.isNotEmpty(diagnosisConceptSources)) {
-            if (USE_NULL_VALUE.equals(diagnosisConceptSources) ) {
+            if (USE_NULL_VALUE.equals(diagnosisConceptSources)) {
                 sources = null;
             } else {
-                String [] sourceNames = diagnosisConceptSources.split(",");
+                String[] sourceNames = diagnosisConceptSources.split(",");
                 for (String sourceName : sourceNames) {
                     ConceptSource source = conceptService.getConceptSourceByName(sourceName);
                     if (source != null) {
                         sources.add(source);
-                    }                
+                    }
                 }
             }
-        }
-        else {
+        } else {
             sources = emrApiProperties.getConceptSourcesForDiagnosisSearch();
         }
 
@@ -146,42 +144,42 @@ public class DiagnosesFragmentController {
 
     @Deprecated
     public List<SimpleObject> searchNonCoded(UiSessionContext context,
-                                     UiUtils ui,
-                                     @SpringBean("emrApiProperties") EmrApiProperties emrApiProperties,
-                                     @SpringBean("emrConceptService") EmrConceptService emrConceptService,
-                                     @SpringBean("conceptService") ConceptService conceptService,
-                                     @RequestParam("term") String query,
-                                     @RequestParam(value = "start", defaultValue = "0") Integer start,
-                                     @RequestParam(value = "size", defaultValue = "50") Integer size) throws Exception {
+                                             UiUtils ui,
+                                             @SpringBean("emrApiProperties") EmrApiProperties emrApiProperties,
+                                             @SpringBean("emrConceptService") EmrConceptService emrConceptService,
+                                             @SpringBean("conceptService") ConceptService conceptService,
+                                             @RequestParam("term") String query,
+                                             @RequestParam(value = "start", defaultValue = "0") Integer start,
+                                             @RequestParam(value = "size", defaultValue = "50") Integer size) throws Exception {
 
         return search(context, ui, emrApiProperties, emrConceptService, conceptService, query, null, null, null, start, size);
     }
 
     public FragmentActionResult codeDiagnosis(UiUtils ui,
-                                             @RequestParam("nonCodedObsId") Integer nonCodedObsId,
-                                             @RequestParam("diagnosis") List<String> diagnoses, // each string is json, like {"certainty":"PRESUMED","diagnosisOrder":"PRIMARY","diagnosis":"ConceptName:840"}
-                                             @SpringBean("obsService") ObsService obsService,
-                                             @SpringBean("emrDiagnosisService") DiagnosisService diagnosisService,
-                                             @SpringBean("conceptService") ConceptService conceptService
-                                             ) throws Exception {
+                                              @RequestParam("nonCodedObsId") Integer nonCodedObsId,
+                                              @RequestParam("diagnosis") List<String> diagnoses, // each string is json, like {"certainty":"PRESUMED","diagnosisOrder":"PRIMARY","diagnosis":"ConceptName:840"}
+                                              @SpringBean("obsService") ObsService obsService,
+                                              @SpringBean("emrDiagnosisService") DiagnosisService diagnosisService,
+                                              @SpringBean("conceptService") ConceptService conceptService
+    ) throws Exception {
 
 
-        if(nonCodedObsId != null){
+        if (nonCodedObsId != null) {
             Obs nonCodedObs = obsService.getObs(nonCodedObsId);
-            if (nonCodedObs !=null ){
+            if (nonCodedObs != null) {
                 List<Diagnosis> diagnosisList = new ArrayList<Diagnosis>();
                 for (String diagnosisJson : diagnoses) {
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode rootNode = mapper.readTree(diagnosisJson);
                     Iterator<JsonNode> iterator = rootNode.iterator();
-                    while (iterator.hasNext()){
+                    while (iterator.hasNext()) {
                         JsonNode next = iterator.next();
                         Diagnosis diagnosis = parseDiagnosisJson(next.toString(), conceptService);
                         diagnosisList.add(diagnosis);
                     }
                 }
-                List<Obs> newDiagnoses= diagnosisService.codeNonCodedDiagnosis(nonCodedObs, diagnosisList);
-                if ((newDiagnoses != null) && !newDiagnoses.isEmpty()){
+                List<Obs> newDiagnoses = diagnosisService.codeNonCodedDiagnosis(nonCodedObs, diagnosisList);
+                if ((newDiagnoses != null) && !newDiagnoses.isEmpty()) {
                     return new SuccessResult(ui.message("coreapps.dataManagement.codeDiagnosis.success"));
                 }
             }
@@ -192,6 +190,7 @@ public class DiagnosesFragmentController {
     /**
      * This is public so that it can be used by a fragment that needs to prepopulate a diagnoses widget that is normally
      * populated with AJAX results from the #search method.
+     *
      * @param result
      * @param ui
      * @param locale
@@ -204,8 +203,25 @@ public class DiagnosesFragmentController {
         Concept concept = result.getConcept();
         ConceptName preferredName = getPreferredName(locale, concept);
         PropertyUtils.setProperty(simple, "concept.preferredName", preferredName.getName());
+        ///set concepts set;
+        if (concept.getSetMembers() != null && !concept.getSetMembers().isEmpty()) {
+            List<Concept> concepts = setSetMembers(concept, locale);
+            PropertyUtils.setProperty(simple, "concept.conceptSets", concepts);
+        }
 
         return simple;
+    }
+
+    private List<Concept> setSetMembers(Concept currentConcept, Locale locale) {
+        List<Concept> conceptList = new ArrayList<Concept>();
+
+        for (Concept concept : currentConcept.getSetMembers()) {
+            ConceptName conceptName = concept.getPreferredName(locale);
+            concept.getNames().add(conceptName);
+            concept.setPreferredName(getPreferredName(locale, concept));
+            conceptList.add(concept);
+        }
+        return conceptList;
     }
 
     private ConceptName getPreferredName(Locale locale, Concept concept) {

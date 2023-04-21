@@ -147,6 +147,17 @@
             });
         };
 
+        api.addTreatments = function(diagnosis) {
+            diagnoses.validateDiagnosis(diagnosis);
+            if (api.findSelectedSimilarDiagnosis(diagnosis)) {
+                return;
+            }
+            if (!api.hasPrimaryDiagnosis()) {
+                diagnosis.primary = true;
+            }
+            api.treatments.push(diagnosis);
+        };
+
         api.addDiagnosis = function(diagnosis) {
             diagnoses.validateDiagnosis(diagnosis);
             if (api.findSelectedSimilarDiagnosis(diagnosis)) {
